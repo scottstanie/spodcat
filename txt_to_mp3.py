@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from argparse import ArgumentParser
 import subprocess
 from boto3 import Session
@@ -32,8 +33,10 @@ def convert_text(input_text):
         )
     try:
         response = _synth_speech(input_text)
-    except ClientError:
+    except ClientError as e:
+        print e
         print 'Input text length: ', len(input_text)
+        print input_text
         # TODO: handle split and combine correctly
         # print 'Trying to split...'
         # sentences = _divide_input(input_text)
@@ -53,10 +56,10 @@ def write_current_text(input_text, idx, debug=True):
         f.write(response_stream.read())
 
 
-def combine_outputs():
+def combine_outputs(output_name):
     """List the output files in numerical order,
     and combine them into one using cat"""
-    cat_command = 'cat $(ls tmpoutput_* | sort -n -t "_" -k 2) > full_audio.mp3'
+    cat_command = 'cat $(ls tmpoutput_* | sort -n -t "_" -k 2) > "%s"' % output_name.replace("'", '')
     subprocess.check_call(cat_command, shell=True)
 
     # Cleanup the tmp files
@@ -94,7 +97,9 @@ def main(args):
     if current_conversion_text:
         write_current_text(current_conversion_text, idx, args.debug)
 
-    combine_outputs()
+    output_name = args.path.replace('.txt', '.mp3')
+    print 'Output file:', output_name
+    combine_outputs(output_name)
 
 if __name__ == '__main__':
     cli = ArgumentParser(description='Example conversion of text file to mp3 file')
